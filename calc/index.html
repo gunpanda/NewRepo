@@ -1,92 +1,49 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор площади стен</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        input, button {
-            display: block;
-            width: 100%;
-            margin: 10px 0;
-            padding: 10px;
-            font-size: 16px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <title>Расчет площади стен</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <center>
     <div class="container">
-        <h1>Калькулятор площади стен</h1>
-        <form id="wall-form">
-            <label for="choice">Выберите способ ввода:</label>
-            <select id="choice" name="choice">
-                <option value="общая">Общая площадь</option>
-                <option value="по очереди">По очереди</option>
-            </select>
-            <div id="input-fields"></div>
-            <button type="button" onclick="calculateArea()">Рассчитать</button>
+        <h1>Расчет площади стен</h1>
+        <form id="wallForm">
+            <label for="numWalls">Количество стен:</label>
+            <input type="number" id="numWalls" name="numWalls" min="1" required>
+            <div id="wallInputs"></div>
+            <button type="button" onclick="calculateTotalArea()">Рассчитать</button>
         </form>
-        <p id="result"></p>
+        <div class="result" id="result"></div>
     </div>
 
     <script>
-        function calculateArea() {
-            const choice = document.getElementById('choice').value;
-            let totalArea = 0;
-
-            if (choice === 'общая') {
-                const totalAreaInput = document.getElementById('total-area');
-                if (totalAreaInput) {
-                    totalArea = parseFloat(totalAreaInput.value);
-                }
-            } else if (choice === 'по очереди') {
-                const numWalls = parseInt(document.getElementById('num-walls').value);
-                for (let i = 0; i < numWalls; i++) {
-                    const length = parseFloat(document.getElementById(`length-${i}`).value);
-                    const height = parseFloat(document.getElementById(`height-${i}`).value);
-                    totalArea += length * height;
-                }
-            }
-
-            document.getElementById('result').innerText = `Общая площадь стен: ${totalArea} квадратных метров`;
-        }
-
-        document.getElementById('choice').addEventListener('change', function() {
-            const choice = this.value;
-            const inputFields = document.getElementById('input-fields');
-            inputFields.innerHTML = '';
-
-            if (choice === 'общая') {
-                inputFields.innerHTML = '<label for="total-area">Введите общую площадь стен в квадратных метрах:</label><input type="number" id="total-area" name="total-area" step="0.01">';
-            } else if (choice === 'по очереди') {
-                inputFields.innerHTML = '<label for="num-walls">Введите количество стен:</label><input type="number" id="num-walls" name="num-walls" step="1" min="1">';
-                document.getElementById('num-walls').addEventListener('input', function() {
-                    const numWalls = parseInt(this.value);
-                    let wallsInputs = '';
-                    for (let i = 0; i < numWalls; i++) {
-                        wallsInputs += `<label for="length-${i}">Длина стены ${i+1} (м):</label><input type="number" id="length-${i}" name="length-${i}" step="0.01"><label for="height-${i}">Высота стены ${i+1} (м):</label><input type="number" id="height-${i}" name="height-${i}" step="0.01">`;
-                    }
-                    inputFields.innerHTML += wallsInputs;
-                });
+        document.getElementById('numWalls').addEventListener('input', function() {
+            const numWalls = this.value;
+            const wallInputs = document.getElementById('wallInputs');
+            wallInputs.innerHTML = '';
+            for (let i = 0; i < numWalls; i++) {
+                wallInputs.innerHTML += `
+                    <label for="length${i}">Длина стены ${i + 1} (м):</label>
+                    <input type="number" id="length${i}" name="length${i}" min="0" step="0.01" required>
+                    <label for="height${i}">Высота стены ${i + 1} (м):</label>
+                    <input type="number" id="height${i}" name="height${i}" min="0" step="0.01" required>
+                `;
             }
         });
-    </script>
+
+        function calculateTotalArea() {
+            const numWalls = document.getElementById('numWalls').value;
+            let totalArea = 0;
+            for (let i = 0; i < numWalls; i++) {
+                const length = parseFloat(document.getElementById(`length${i}`).value);
+                const height = parseFloat(document.getElementById(`height${i}`).value);
+                totalArea += length * height;
+            }
+            document.getElementById('result').innerText = `Общая площадь стен: ${totalArea.toFixed(2)} квадратных метров`;
+        }
+    </script></center>
 </body>
 </html>
