@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор материалов для парковки</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Калькулятор материалов для парковки</h1>
+    <form id="calculatorForm">
+        <label for="length">Длина парковки (метры):</label>
+        <input type="number" id="length" required>
+        <br>
+        <label for="width">Ширина парковки (метры):</label>
+        <input type="number" id="width" required>
+        <br>
+        <label for="gravelThickness">Толщина слоя гравия (см):</label>
+        <input type="number" id="gravelThickness" value="10">
+        <br>
+        <label for="sandThickness">Толщина слоя песка (см):</label>
+        <input type="number" id="sandThickness" value="5">
+        <br>
+        <button type="submit">Рассчитать</button>
+    </form>
+    <div id="result"></div>
+    <script src="script.js"></script>
+</body>
+</html>
