@@ -5,79 +5,96 @@ import random
 pygame.init()
 
 # Установка режима экрана
-screen_width = 1600  # Ширина экрана под фон
-screen_height = 1043  # Высота экрана под фон
+screen_width = 1600
+screen_height = 1043
 screen = pygame.display.set_mode((screen_width, screen_height))
 
-# Загрузка фонового изображения и его обработка
+# Загрузка фонового изображения
 background = pygame.image.load("c:\\code\\geometry\\fon.png").convert()
 background = pygame.transform.scale(background, (screen_width, screen_height))
 
-# Функция для загрузки и обработки спрайтов
-def load_sprite(path, size=(128, 256)):  # Размер спрайта героя
-    sprite = pygame.image.load(path).convert_alpha()  # Загружаем изображение с альфа-каналом
-    return pygame.transform.scale(sprite, size)  # Изменяем размер спрайта
+# Загрузка и обработка спрайтов
+def load_sprite(path, size=(178, 196)):
+    sprite = pygame.image.load(path).convert_alpha()
+    return pygame.transform.scale(sprite, size)
 
-# Загрузка спрайтов
-sprites = [
-    load_sprite("c:\\code\\geometry\\cap_sprite_1.png"),
-    load_sprite("c:\\code\\geometry\\cap_sprite_2.png"),
-    load_sprite("c:\\code\\geometry\\cap_sprite_3.png"),
-    load_sprite("c:\\code\\geometry\\cap_sprite_4.png")
+# Загрузка спрайтов препятствий
+obstacle_sprites = [
+    load_sprite("c:\\code\\geometry\\obstacle_sprite1.png", (178, 196)),
+    load_sprite("c:\\code\\geometry\\obstacle_sprite2.png", (178, 196)),
+    load_sprite("c:\\code\\geometry\\obstacle_sprite3.png", (178, 196))
+]
+
+# Загрузка спрайтов героя
+hero_sprites = [
+    load_sprite("c:\\code\\geometry\\cap_sprite_1.png", (128, 256)),
+    load_sprite("c:\\code\\geometry\\cap_sprite_2.png", (128, 256)),
+    load_sprite("c:\\code\\geometry\\cap_sprite_3.png", (128, 256)),
+    load_sprite("c:\\code\\geometry\\cap_sprite_4.png", (128, 256))
+]
+
+# Загрузка спрайтов монет
+coin_sprites = [
+    load_sprite("c:\\code\\geometry\\coin_sprite1.png", (50, 50)),
+    load_sprite("c:\\code\\geometry\\coin_sprite2.png", (50, 50)),
+    load_sprite("c:\\code\\geometry\\coin_sprite3.png", (50, 50))
 ]
 
 # Параметры игры
 hero_x = 100
-hero_y = 680  # Устанавливаем положение героя чуть выше
+hero_y = 680  # Позиция героя на экране
 gravity = 0.5
 jump_speed = 15
 speed = 10
 hero_speed_y = 0
 is_jumping = False
 double_jump = False
+lives = 3  # Количество жизней
+game_over = False  # Флаг окончания игры
 score = 0
-frame_count = 0  # Для анимации
-sprite_index = 0  # Индекс текущего спрайта
+frame_count = 0
+hero_frame_count = 0
+coin_frame_count = 0
+obstacle_index = 0  # Индекс текущего спрайта препятствия
+hero_sprite_index = 0  # Индекс текущего спрайта героя
+coin_sprite_index = 0  # Индекс текущего спрайта монет
+background_x1 = 0
+background_x2 = screen_width
 
-# Список препятствий
+# Список препятствий и монет
 obstacle = None
-obstacle_shape = None
+coin = None
 
-# Функция для создания нового препятствия
+# Функция для создания препятствия на уровне героя
 def create_obstacle():
-    global obstacle_shape
-    shape_type = random.choice(['rectangle', 'circle', 'triangle'])  # Выбираем случайную форму
-    if shape_type == 'rectangle':
-        width = random.randint(50, 150)
-        height = random.randint(30, 50)  # Высота препятствия меньше, чтобы не задевать героя
-        obstacle = pygame.Rect(screen_width, 680 - height, width, height)  # Опускаем препятствие ниже
-        obstacle_shape = 'rectangle'
-        return obstacle
-    elif shape_type == 'circle':
-        radius = random.randint(30, 50)
-        obstacle = pygame.Rect(screen_width, 680 - radius, radius * 2, radius * 2)  # Опускаем круг ниже
-        obstacle_shape = 'circle'
-        return obstacle
-    elif shape_type == 'triangle':
-        size = random.randint(50, 100)
-        obstacle = pygame.Rect(screen_width, 680 - size, size, size)  # Опускаем треугольник ниже
-        obstacle_shape = 'triangle'
-        return obstacle
+    obstacle_height = random.randint(50, 150)  # Высота препятствия, чтобы оно было ниже героя
+    obstacle_y = 680 - obstacle_height  # Чтобы оно всегда было преодолимо
+    return pygame.Rect(screen_width, obstacle_y, 178, obstacle_height)
 
-# Запуск музыки
-pygame.mixer.music.load("c:\\code\\geometry\\mu.mp3")  # Загрузка музыкального файла
-pygame.mixer.music.play(-1)  # Воспроизведение музыки в цикле
+# Функция для создания монет
+def create_coin():
+    while True:
+        coin_rect = pygame.Rect(random.randint(screen_width, screen_width + 400), random.randint(400, 650), 50, 50)
+        if not obstacle.colliderect(coin_rect):  # Проверяем, чтобы монета не пересекалась с препятствием
+            return coin_rect
+
+# Функция для отображения текста
+def draw_text(text, size, color, x, y):
+    font = pygame.font.Font(None, size)
+    text_surface = font.render(text, True, color)
+    screen.blit(text_surface, (x, y))
 
 # Основной игровой цикл
 running = True
 clock = pygame.time.Clock()
 
-# Создание первого препятствия
+# Создание первого препятствия и монетки
 obstacle = create_obstacle()
+coin = create_coin()
 
-# Параметры движения фона
-background_x1 = 0
-background_x2 = screen_width
+# Запуск музыки
+pygame.mixer.music.load("c:\\code\\geometry\\mu.mp3")
+pygame.mixer.music.play(-1)
 
 while running:
     clock.tick(60)  # Ограничение FPS до 60
@@ -85,7 +102,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE and not game_over:
                 if not is_jumping:
                     is_jumping = True
                     hero_speed_y = -jump_speed
@@ -93,67 +110,84 @@ while running:
                     double_jump = True
                     hero_speed_y = -jump_speed
 
-    # Обновление позиции героя
-    if is_jumping:
-        hero_y += hero_speed_y
-        hero_speed_y += gravity  # Применяем гравитацию
+    if not game_over:
+        # Обновление позиции героя
+        if is_jumping:
+            hero_y += hero_speed_y
+            hero_speed_y += gravity
+            if hero_y >= 680:
+                hero_y = 680
+                is_jumping = False
+                double_jump = False
+                hero_speed_y = 0
 
-        # Проверка на приземление
-        if hero_y >= 680:  # Проверяем, чтобы герой не падал ниже 550
-            hero_y = 680
-            is_jumping = False
-            double_jump = False
-            hero_speed_y = 0
+        # Двигаем препятствия и монетки
+        obstacle.x -= speed
+        coin.x -= speed
 
-    # Двигаем препятствие влево
-    if obstacle:
-        obstacle.x -= speed  # Двигаем препятствия влево
+        # Если препятствие вышло за экран, создаем новое
+        if obstacle.x < -178:
+            score += 1
+            obstacle = create_obstacle()
+            coin = create_coin()  # Новая монета при каждом новом препятствии
 
-        if obstacle.x < 0:  # Удаляем препятствие, если оно вышло за экран
-            score += 1  # Увеличиваем счет
-            obstacle = create_obstacle()  # Создаем новое препятствие
+        # Проверка столкновений (уменьшаем зоны столкновения)
+        hero_rect = pygame.Rect(hero_x, hero_y, 128, 256).inflate(-20, -20)  # Уменьшаем зону героя
+        obstacle_rect = obstacle.inflate(-30, -30)  # Уменьшаем зону препятствия
 
-    # Проверка столкновений
-    hero_rect = pygame.Rect(hero_x, hero_y, sprites[0].get_width(), sprites[0].get_height())
-    if obstacle and hero_rect.colliderect(obstacle.inflate(-20, -20)):  # Уменьшаем область столкновения
-        running = False  # Завершаем игру
+        if hero_rect.colliderect(obstacle_rect):
+            lives -= 1  # Уменьшаем количество жизней
+            if lives == 0:
+                game_over = True  # Игра окончена, если жизни закончились
+            else:
+                obstacle = create_obstacle()  # Если есть жизни, создаем новое препятствие
 
-    # Анимация героя
-    frame_count += 1
-    if frame_count >= 10:  # Меняем спрайт каждые 10 кадров
-        sprite_index = (sprite_index + 1) % len(sprites)
-        frame_count = 0
+        # Проверка на сбор монетки
+        if hero_rect.colliderect(coin):
+            score += 5  # Очки за монетку
+            coin = create_coin()
 
-    # Обновление фона
-    background_x1 -= speed * 0.5  # Двигаем фон с меньшей скоростью
-    background_x2 -= speed * 0.5
+        # Анимация препятствий
+        frame_count += 1
+        if frame_count >= 10:
+            obstacle_index = (obstacle_index + 1) % len(obstacle_sprites)
+            frame_count = 0
 
-    # Если фон ушел за пределы экрана, перемещаем его в начало
-    if background_x1 <= -screen_width:
-        background_x1 = screen_width
-    if background_x2 <= -screen_width:
-        background_x2 = screen_width
+        # Анимация героя
+        hero_frame_count += 1
+        if hero_frame_count >= 10:
+            hero_sprite_index = (hero_sprite_index + 1) % len(hero_sprites)
+            hero_frame_count = 0
 
-    # Отображение
-    screen.blit(background, (background_x1, 0))  # Отображаем фон
-    screen.blit(background, (background_x2, 0))  # Отображаем фон
-    screen.blit(sprites[sprite_index], (hero_x, hero_y))  # Отображаем героя с анимацией
+        # Анимация монет
+        coin_frame_count += 1
+        if coin_frame_count >= 10:
+            coin_sprite_index = (coin_sprite_index + 1) % len(coin_sprites)
+            coin_frame_count = 0
 
-    # Отображение препятствия
-    if obstacle:
-        if obstacle_shape == 'rectangle':
-            pygame.draw.rect(screen, (255, 0, 0), obstacle)  # Отображаем прямоугольник
-        elif obstacle_shape == 'circle':
-            pygame.draw.circle(screen, (0, 255, 0), (obstacle.centerx, obstacle.centery), obstacle.width // 2)  # Отображаем круг
-        elif obstacle_shape == 'triangle':
-            size = obstacle.width  # Используем ширину как размер
-            points = [(obstacle.x, obstacle.y + size), (obstacle.x + size // 2, obstacle.y), (obstacle.x + size, obstacle.y + size)]
-            pygame.draw.polygon(screen, (0, 0, 255), points)  # Отображаем треугольник
+        # Обновление фона
+        background_x1 -= speed * 0.5
+        background_x2 -= speed * 0.5
+        if background_x1 <= -screen_width:
+            background_x1 = screen_width
+        if background_x2 <= -screen_width:
+            background_x2 = screen_width
 
-    # Отображение счета
-    font = pygame.font.Font(None, 36)
-    score_text = font.render(f'Score: {score}', True, (255, 255, 255))
-    screen.blit(score_text, (10, 10))
+        # Отображение элементов игры
+        screen.blit(background, (background_x1, 0))
+        screen.blit(background, (background_x2, 0))
+        screen.blit(obstacle_sprites[obstacle_index], obstacle)
+        screen.blit(coin_sprites[coin_sprite_index], coin)  # Отображение анимированной монеты
+        screen.blit(hero_sprites[hero_sprite_index], (hero_x, hero_y))  # Отображение анимированного героя
+
+        # Отображение счета и жизней
+        draw_text(f'Score: {score}', 36, (255, 255, 255), 10, 10)
+        draw_text(f'Lives: {lives}', 36, (255, 255, 255), 10, 50)
+
+    else:
+        # Экран Game Over
+        draw_text('Game Over', 100, (255, 0, 0), screen_width // 2 - 200, screen_height // 2 - 50)
+        draw_text(f'Score: {score}', 50, (255, 255, 255), screen_width // 2 - 100, screen_height // 2 + 50)
 
     pygame.display.flip()
 
