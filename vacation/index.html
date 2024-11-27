@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь отпусков сотрудников</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Календарь отпусков сотрудников</h1>
+
+    <div class="container">
+        <table id="vacationTable">
+            <thead>
+                <tr>
+                    <th>Сотрудник</th>
+                    <th>Дата начала</th>
+                    <th>Дата окончания</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Динамическое добавление сотрудников -->
+            </tbody>
+        </table>
+        <button onclick="addEmployeeRow()">Добавить сотрудника</button>
+        <button onclick="generateReport()">Сформировать отчёт</button>
+        <button onclick="exportToCSV()">Экспортировать в CSV</button>
+    </div>
+
+    <div id="calendar"></div>
+    <div id="report"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
