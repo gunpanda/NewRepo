@@ -46,4 +46,4 @@ if __name__ == "__main__":
             print(f"Произошла неизвестная ошибка: {e}. Попробуйте снова.")
     
     additional_tax = calculate_additional_tax(total_income, tax_withheld)
-    print(f"Сумма налога, которую потребуется доплатить самостоятельно: {additional_tax} рублей")8
+    print(f"Сумма налога, которую потребуется доплатить самостоятельно: {additional_tax} рублей")
