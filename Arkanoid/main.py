@@ -165,7 +165,7 @@ lives = 3
 # Игровой цикл
 running = True
 while running:
-    screen.fill(BLACK)
+    screen.fill(BLACK)  # Очистка экрана цветом фона
     
     # Обработка событий
     for event in pygame.event.get():
