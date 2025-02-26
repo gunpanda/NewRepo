@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 # Инициализация Pygame
 pygame.init()
@@ -21,6 +22,21 @@ ORANGE = (255, 165, 0)
 # FPS
 FPS = 60
 clock = pygame.time.Clock()
+
+# Загрузка звуков
+sound_path = os.path.join(os.path.dirname(__file__), 'arkanoid')
+background_music_path = os.path.join(sound_path, 'background_music.mp3')
+hit_sound_path = os.path.join(sound_path, 'hit.wav')
+shoot_sound_path = os.path.join(sound_path, 'shoot.wav')
+powerup_sound_path = os.path.join(sound_path, 'powerup.wav')
+
+if os.path.exists(background_music_path):
+    pygame.mixer.music.load(background_music_path)
+    pygame.mixer.music.play(-1)  # Зацикливание музыки
+
+hit_sound = pygame.mixer.Sound(hit_sound_path) if os.path.exists(hit_sound_path) else None
+shoot_sound = pygame.mixer.Sound(shoot_sound_path) if os.path.exists(shoot_sound_path) else None
+powerup_sound = pygame.mixer.Sound(powerup_sound_path) if os.path.exists(powerup_sound_path) else None
 
 # Класс для платформы
 class Paddle:
@@ -85,6 +101,8 @@ class Block:
         self.health -= 1
         if self.health > 0:
             self.color = self.get_color()
+        if hit_sound:
+            hit_sound.play()
 
     def draw(self):
         pygame.draw.rect(screen, self.color, self.rect)
@@ -107,7 +125,7 @@ class PowerUp:
         self.rect = pygame.Rect(x, y, 20, 20)
         self.speed_y = 5
         self.active = False
-        self.effect = random.choice(["expand_paddle", "speed_ball"])
+        self.effect = random.choice(["expand_paddle", "speed_ball", "extra_life"])
 
     def move(self):
         self.rect.y += self.speed_y
@@ -141,6 +159,8 @@ ball = Ball()
 blocks = create_blocks(5, 8)  # 5 рядов и 8 колонок блоков
 powerups = []
 bullets = []  # Список для пуль
+score = 0
+lives = 3
 
 # Игровой цикл
 running = True
@@ -164,6 +184,8 @@ while running:
         # Пуля создается в центре платформы
         bullet = Bullet(paddle.rect.centerx, paddle.rect.top)
         bullets.append(bullet)
+        if shoot_sound:
+            shoot_sound.play()
 
     # Движение мяча
     ball.move()
@@ -180,6 +202,7 @@ while running:
             if bullet.rect.colliderect(block.rect):
                 blocks.remove(block)
                 bullets.remove(bullet)
+                score += 10
                 break
 
     # Проверка столкновения мяча с платформой
@@ -193,6 +216,7 @@ while running:
             block.hit()
             if block.health == 0:
                 blocks.remove(block)
+                score += 50
                 # Создание приза
                 powerup = create_powerup(block.rect.x, block.rect.y)
                 if powerup:
@@ -208,6 +232,10 @@ while running:
             elif powerup.effect == "speed_ball":
                 ball.speed_x *= 1.5  # Ускорение мяча
                 ball.speed_y *= 1.5
+            elif powerup.effect == "extra_life":
+                lives += 1  # Дополнительная жизнь
+            if powerup_sound:
+                powerup_sound.play()
             powerups.remove(powerup)  # Приз пойман, удаляем его
     
     # Рисование объектов
@@ -216,10 +244,21 @@ while running:
     for block in blocks:
         block.draw()
 
+    # Отображение счета и жизней
+    font = pygame.font.Font(None, 36)
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    lives_text = font.render(f"Lives: {lives}", True, WHITE)
+    screen.blit(score_text, (10, 10))
+    screen.blit(lives_text, (WIDTH - 120, 10))
+
     # Проверка проигрыша
     if ball.rect.bottom >= HEIGHT:
-        print("Game Over!")
-        running = False
+        lives -= 1
+        if lives == 0:
+            print("Game Over!")
+            running = False
+        else:
+            ball = Ball()  # Перезапуск мяча
 
     # Проверка победы
     if not blocks:
