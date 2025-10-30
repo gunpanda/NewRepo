@@ -2,15 +2,17 @@ import pygame
 import sys
 import random
 
-# Инициализация Pygame
 pygame.init()
 
-# Размер экрана и ячейки
-CELL_SIZE = 32
-SCREEN_WIDTH = 448
-SCREEN_HEIGHT = 576
+# Размеры
+CELL_SIZE = 24
+COLS = 28
+ROWS = 31
+SCREEN_WIDTH = COLS * CELL_SIZE
+SCREEN_HEIGHT = ROWS * CELL_SIZE
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Pacman")
+pygame.display.set_caption("Pac-Man")
 
 # Цвета
 BLACK = (0, 0, 0)
@@ -19,178 +21,180 @@ BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 WHITE = (255, 255, 255)
 
-# Лабиринт
-ROWS = SCREEN_HEIGHT // CELL_SIZE
-COLS = SCREEN_WIDTH // CELL_SIZE
-
-# ФПС
 clock = pygame.time.Clock()
+
+# Упрощенный оригинальный лабиринт (0 - проход, 1 - стена)
+maze_map = [
+    "1111111111111111111111111111",
+    "1000000000110000000000000001",
+    "1011111110110111111111111101",
+    "1011111110110111111111111101",
+    "1011111110110111111111111101",
+    "1000000000000000000000000001",
+    "1011110111111111111111011101",
+    "1000000110000000000110000001",
+    "1111110110111111101101111111",
+    "1111110110111111101101111111",
+    "1111110110000000000111111111",
+    "1111110110111111101101111111",
+    "1111110110111111101101111111",
+    "1000000000000000000000000001",
+    "1011111110110111111111111101",
+    "1000000110110110000000000001",
+    "1111010110110110111111111101",
+    "1000010000000000000000000101",
+    "1011111111111111111111111101",
+    "1000000000000000000000000001",
+    "1111111111111111111111111111"
+]
+
+# Преобразование карты в список списков
+def load_maze():
+    return [[int(cell) for cell in row] for row in maze_map]
 
 # Класс Pacman
 class Pacman:
-    def __init__(self):
-        self.x = CELL_SIZE
-        self.y = CELL_SIZE
-        self.speed = 4
+    def __init__(self, x, y):
+        self.grid_x = x
+        self.grid_y = y
+        self.direction = (0, 0)
+        self.next_direction = (0, 0)
+        self.speed = 1
         self.score = 0
 
-    def draw(self):
-        pygame.draw.circle(screen, YELLOW, (self.x + CELL_SIZE // 2, self.y + CELL_SIZE // 2), 16)
-
-    def move(self, dx, dy, maze):
-        if maze[(self.y + dy * self.speed) // CELL_SIZE][(self.x + dx * self.speed) // CELL_SIZE] == 0:
-            self.x += dx * self.speed
-            self.y += dy * self.speed
-
-    def eat_coin(self, coins):
-        pos = (self.x // CELL_SIZE, self.y // CELL_SIZE)
-        if pos in coins:
-            coins.remove(pos)
-            self.score += 1
-
-class Ghost:
-    def __init__(self):
-        self.x = random.randint(1, COLS - 2) * CELL_SIZE  # Начальное положение внутри границ
-        self.y = random.randint(1, ROWS - 2) * CELL_SIZE
-        self.speed = 2
-        self.direction = random.choice([(1, 0), (-1, 0), (0, 1), (0, -1)])  # направления: вправо, влево, вниз, вверх
-
-    def draw(self):
-        pygame.draw.circle(screen, RED, (self.x + CELL_SIZE // 2, self.y + CELL_SIZE // 2), 16)
+    def pixel_pos(self):
+        return (self.grid_x * CELL_SIZE + CELL_SIZE // 2, self.grid_y * CELL_SIZE + CELL_SIZE // 2)
 
     def move(self, maze):
-        dx, dy = self.direction
-        new_x = self.x + dx * self.speed
-        new_y = self.y + dy * self.speed
+        if self.can_move(maze, self.next_direction):
+            self.direction = self.next_direction
 
-        # Проверка, что новые координаты находятся в пределах индексов массива
-        if 0 <= new_y // CELL_SIZE < len(maze) and 0 <= new_x // CELL_SIZE < len(maze[0]):
-            if maze[new_y // CELL_SIZE][new_x // CELL_SIZE] == 0:
-                self.x = new_x
-                self.y = new_y
-            else:
-                # Если натолкнулся на стену, меняем направление
-                self.direction = random.choice([(1, 0), (-1, 0), (0, 1), (0, -1)])
+        new_x = self.grid_x + self.direction[0]
+        new_y = self.grid_y + self.direction[1]
+
+        if self.can_move(maze, self.direction):
+            self.grid_x = new_x
+            self.grid_y = new_y
+
+    def can_move(self, maze, direction):
+        new_x = self.grid_x + direction[0]
+        new_y = self.grid_y + direction[1]
+        if 0 <= new_y < len(maze) and 0 <= new_x < len(maze[0]):
+            return maze[new_y][new_x] == 0
+        return False
+
+    def draw(self):
+        pygame.draw.circle(screen, YELLOW, self.pixel_pos(), CELL_SIZE // 2 - 2)
+
+# Класс призрака
+class Ghost:
+    def __init__(self, x, y):
+        self.grid_x = x
+        self.grid_y = y
+        self.direction = random.choice([(0, 1), (1, 0), (0, -1), (-1, 0)])
+        self.speed = 1
+
+    def move(self, maze):
+        new_x = self.grid_x + self.direction[0]
+        new_y = self.grid_y + self.direction[1]
+
+        if 0 <= new_y < len(maze) and 0 <= new_x < len(maze[0]) and maze[new_y][new_x] == 0:
+            self.grid_x = new_x
+            self.grid_y = new_y
         else:
-            # Если выходит за границы лабиринта, меняем направление
-            self.direction = random.choice([(1, 0), (-1, 0), (0, 1), (0, -1)])
+            self.direction = random.choice([(0, 1), (1, 0), (0, -1), (-1, 0)])
 
-# Предопределённый лабиринт
-def generate_maze():
-    # 1 - стена, 0 - проход
-    maze = [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]
-    return maze
+    def pixel_pos(self):
+        return (self.grid_x * CELL_SIZE + CELL_SIZE // 2, self.grid_y * CELL_SIZE + CELL_SIZE // 2)
 
-# Создание монет в проходах лабиринта
-def create_coins(maze):
+    def draw(self):
+        pygame.draw.circle(screen, RED, self.pixel_pos(), CELL_SIZE // 2 - 2)
+
+# Монеты
+def generate_coins(maze):
     coins = set()
-    for row in range(len(maze)):
-        for col in range(len(maze[0])):
-            if maze[row][col] == 0:
-                coins.add((col, row))
+    for y in range(len(maze)):
+        for x in range(len(maze[0])):
+            if maze[y][x] == 0:
+                coins.add((x, y))
     return coins
 
-# Отрисовка лабиринта
 def draw_maze(maze):
-    for row in range(len(maze)):
-        for col in range(len(maze[0])):
-            if maze[row][col] == 1:
-                pygame.draw.rect(screen, BLUE, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+    for y in range(len(maze)):
+        for x in range(len(maze[0])):
+            if maze[y][x] == 1:
+                pygame.draw.rect(screen, BLUE, (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
-# Отрисовка монет
 def draw_coins(coins):
-    for coin in coins:
-        pygame.draw.circle(screen, WHITE, (coin[0] * CELL_SIZE + CELL_SIZE // 2, coin[1] * CELL_SIZE + CELL_SIZE // 2), 4)
+    for x, y in coins:
+        pygame.draw.circle(screen, WHITE, (x * CELL_SIZE + CELL_SIZE // 2, y * CELL_SIZE + CELL_SIZE // 2), 3)
 
-# Проверка на столкновение с призраком
 def check_collision(pacman, ghosts):
     for ghost in ghosts:
-        if pacman.x // CELL_SIZE == ghost.x // CELL_SIZE and pacman.y // CELL_SIZE == ghost.y // CELL_SIZE:
+        if pacman.grid_x == ghost.grid_x and pacman.grid_y == ghost.grid_y:
             return True
     return False
 
-# Проверка, все ли монеты собраны
-def check_all_coins_collected(coins):
-    return len(coins) == 0
-
-# Основная функция игры
 def game_loop():
-    maze = generate_maze()
-    coins = create_coins(maze)
-    pacman = Pacman()
-    ghosts = [Ghost() for _ in range(2)]  # создаем 2 призрака
+    maze = load_maze()
+    pacman = Pacman(1, 1)
+    ghosts = [Ghost(26, 18), Ghost(1, 18)]  # Призраки по краям
+    coins = generate_coins(maze)
 
     while True:
+        screen.fill(BLACK)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-        # Управление Pacman'ом
         keys = pygame.key.get_pressed()
-        dx, dy = 0, 0
         if keys[pygame.K_LEFT]:
-            dx = -1
-        if keys[pygame.K_RIGHT]:
-            dx = 1
-        if keys[pygame.K_UP]:
-            dy = -1
-        if keys[pygame.K_DOWN]:
-            dy = 1
+            pacman.next_direction = (-1, 0)
+        elif keys[pygame.K_RIGHT]:
+            pacman.next_direction = (1, 0)
+        elif keys[pygame.K_UP]:
+            pacman.next_direction = (0, -1)
+        elif keys[pygame.K_DOWN]:
+            pacman.next_direction = (0, 1)
 
-        # Обновление позиции Pacman'а
-        pacman.move(dx, dy, maze)
-        pacman.eat_coin(coins)
+        pacman.move(maze)
 
-        # Проверка на победу
-        if check_all_coins_collected(coins):
-            font = pygame.font.Font(None, 72)
-            win_text = font.render("You Win!", True, YELLOW)
-            screen.blit(win_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50))
-            pygame.display.update()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
+        if (pacman.grid_x, pacman.grid_y) in coins:
+            coins.remove((pacman.grid_x, pacman.grid_y))
+            pacman.score += 10
 
-        # Проверка на столкновение с призраком
-        if check_collision(pacman, ghosts):
-            font = pygame.font.Font(None, 72)
-            game_over_text = font.render("Game Over", True, RED)
-            screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 50))
-            pygame.display.update()
-            pygame.time.wait(3000)
-            pygame.quit()
-            sys.exit()
-
-        # Обновление позиции призраков
         for ghost in ghosts:
             ghost.move(maze)
 
-        # Рендеринг
-        screen.fill(BLACK)
         draw_maze(maze)
         draw_coins(coins)
         pacman.draw()
         for ghost in ghosts:
             ghost.draw()
 
-        # Отображение счета
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Score: {pacman.score}", True, YELLOW)
         screen.blit(score_text, (10, 10))
 
+        if check_collision(pacman, ghosts):
+            game_over = font.render("Game Over!", True, RED)
+            screen.blit(game_over, (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2))
+            pygame.display.update()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
+        if len(coins) == 0:
+            win_text = font.render("You Win!", True, YELLOW)
+            screen.blit(win_text, (SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT // 2))
+            pygame.display.update()
+            pygame.time.wait(3000)
+            pygame.quit()
+            sys.exit()
+
         pygame.display.update()
+        clock.tick(10)
 
-        # Ограничение FPS
-        clock.tick(60)
-
-# Запуск игры
 game_loop()
