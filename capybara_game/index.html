@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Капибара: Охота за арбузами 🍉</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        canvas {
+            border: 4px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .score-item {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .instructions {
+            margin-top: 15px;
+            color: #fff;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🍉 Капибара: Охота за арбузами 🍉</h1>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="score-board">
+            <div class="score-item">Очки: <span id="score">0</span></div>
+            <div class="score-item">Рекорд: <span id="highscore">0</span></div>
+        </div>
+        <div class="instructions">
+            <strong>Пробел</strong> или <strong>Клик мышкой</strong> — прыжок | Собирай арбузы 🍉 и перепрыгивай препятствия 🌵
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highscoreElement = document.getElementById('highscore');
+
+        // Игровые переменные
+        let gameStarted = false;
+        let gameOver = false;
+        let score = 0;
+        let highscore = localStorage.getItem('capybaraHighscore') || 0;
+        highscoreElement.textContent = highscore;
+
+        // Капибара (физика в стиле классических платформеров)
+        const capybara = {
+            x: 100,
+            y: 300,
+            width: 80,
+            height: 60,
+            velocityY: 0,
+            // Разная гравитация для подъёма и падения
+            gravityRise: 0.45,       // при подъёме (лёгкая, плавная)
+            gravityFall: 0.35,       // при падении (мягкая, не резкая)
+            jumpPower: -14,
+            maxFallSpeed: 12,        // ограничение скорости падения
+            isJumping: false,
+            jumpHeld: false,         // зажата ли кнопка прыжка
+            groundY: 300,
+            // Coyote time — можно прыгнуть чуть после срыва с платформы
+            coyoteTime: 6,
+            coyoteTimer: 0,
+            // Jump buffer — ранний ввод прыжка
+            jumpBufferTime: 8,
+            jumpBufferTimer: 0,
+            // Анимация
+            runFrame: 0,
+            frameTimer: 0,
+            frameDelay: 8,
+            legAngle: 0,
+            squash: 1,               // squash & stretch
+            stretch: 1
+        };
+
+        // Массивы объектов
+        let obstacles = [];
+        let watermelons = [];
+        let particles = [];
+
+        // Спавн таймеры
+        let obstacleTimer = 0;
+        let watermelonTimer = 0;
+        let obstacleInterval = 180;
+        let watermelonInterval = 150;
+        let gameSpeed = 2.5;
+
+        // Управление
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!gameStarted) {
+                    gameStarted = true;
+                    gameLoop();
+                } else if (gameOver) {
+                    resetGame();
+                } else {
+                    if (!capybara.jumpHeld) {
+                        capybara.jumpHeld = true;
+                        // Jump buffer — запоминаем нажатие
+                        capybara.jumpBufferTimer = capybara.jumpBufferTime;
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                capybara.jumpHeld = false;
+                // Если отпустили кнопку рано — обрезаем прыжок (как в Mario)
+                if (capybara.velocityY < -5) {
+                    capybara.velocityY = -5;
+                }
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (!gameStarted) {
+                gameStarted = true;
+                gameLoop();
+            } else if (gameOver) {
+                resetGame();
+            } else {
+                if (!capybara.jumpHeld) {
+                    capybara.jumpHeld = true;
+                    capybara.jumpBufferTimer = capybara.jumpBufferTime;
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            capybara.jumpHeld = false;
+            if (capybara.velocityY < -5) {
+                capybara.velocityY = -5;
+            }
+        });
+
+        function resetGame() {
+            gameStarted = false;
+            gameOver = false;
+            score = 0;
+            scoreElement.textContent = score;
+            capybara.y = capybara.groundY;
+            capybara.velocityY = 0;
+            capybara.isJumping = false;
+            capybara.jumpHeld = false;
+            capybara.coyoteTimer = 0;
+            capybara.jumpBufferTimer = 0;
+            capybara.squash = 1;
+            capybara.stretch = 1;
+            obstacles = [];
+            watermelons = [];
+            particles = [];
+            obstacleTimer = 0;
+            watermelonTimer = 0;
+            gameSpeed = 2.5;
+            obstacleInterval = 180;
+            watermelonInterval = 150;
+            drawStartScreen();
+        }
+
+        // Рисование капибары с анимацией
+        function drawCapybara() {
+            ctx.save();
+
+            // Обновление анимации бега
+            if (!capybara.isJumping) {
+                capybara.frameTimer++;
+                if (capybara.frameTimer >= capybara.frameDelay) {
+                    capybara.frameTimer = 0;
+                    capybara.runFrame = (capybara.runFrame + 1) % 4;
+                }
+            }
+
+            // Рассчитываем движение ног
+            const legOffsets = [
+                { front: -8, back: 8 },   // кадр 0
+                { front: 0, back: 0 },    // кадр 1
+                { front: 8, back: -8 },   // кадр 2
+                { front: 0, back: 0 }     // кадр 3
+            ];
+            const legOffset = legOffsets[capybara.runFrame];
+
+            // Наклон тела при прыжке
+            let bodyRotation = 0;
+            if (capybara.isJumping) {
+                bodyRotation = capybara.velocityY < 0 ? -0.15 : 0.15;
+            }
+
+            // Применяем squash & stretch
+            ctx.translate(capybara.x + 40, capybara.y + 30);
+            ctx.scale(capybara.squash, capybara.stretch);
+            ctx.rotate(bodyRotation);
+            ctx.translate(-capybara.x - 40, -capybara.y - 30);
+
+            // Тело (чуть вытянутое)
+            ctx.fillStyle = '#8B6F47';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 40, capybara.y + 30, 42, 28, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Тень на теле
+            ctx.fillStyle = '#7A5F3A';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 35, capybara.y + 35, 30, 15, 0, 0, Math.PI);
+            ctx.fill();
+
+            // Голова
+            ctx.fillStyle = '#9B7F57';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 70, capybara.y + 22, 22, 20, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Морда
+            ctx.fillStyle = '#A88F67';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 85, capybara.y + 26, 12, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Глаз
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(capybara.x + 78, capybara.y + 16, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Блик глаза
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(capybara.x + 79, capybara.y + 15, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Нос
+            ctx.fillStyle = '#5C4033';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 92, capybara.y + 24, 5, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ноздри
+            ctx.fillStyle = '#4A3228';
+            ctx.beginPath();
+            ctx.arc(capybara.x + 93, capybara.y + 23, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Уши
+            ctx.fillStyle = '#7B5F37';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 58, capybara.y + 8, 7, 9, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#9B7F57';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 58, capybara.y + 8, 4, 6, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ноги с анимацией
+            ctx.fillStyle = '#6B4F27';
+            const legWidth = 12;
+            const legHeight = 18;
+            const baseY = capybara.y + 48;
+
+            // Передняя левая нога
+            ctx.save();
+            ctx.translate(capybara.x + 55, baseY);
+            ctx.rotate(legOffset.front * Math.PI / 180);
+            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
+            // Копыто
+            ctx.fillStyle = '#4A3228';
+            ctx.fillRect(-legWidth / 2 - 1, legHeight - 4, legWidth + 2, 4);
+            ctx.restore();
+
+            // Задняя левая нога
+            ctx.save();
+            ctx.translate(capybara.x + 25, baseY);
+            ctx.rotate(legOffset.back * Math.PI / 180);
+            ctx.fillStyle = '#6B4F27';
+            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
+            ctx.fillStyle = '#4A3228';
+            ctx.fillRect(-legWidth / 2 - 1, legHeight - 4, legWidth + 2, 4);
+            ctx.restore();
+
+            // Передняя правая нога
+            ctx.save();
+            ctx.translate(capybara.x + 65, baseY);
+            ctx.rotate(-legOffset.front * Math.PI / 180);
+            ctx.fillStyle = '#5B3F17';
+            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
+            ctx.fillStyle = '#4A3228';
+            ctx.fillRect(-legWidth / 2 - 1, legHeight - 4, legWidth + 2, 4);
+            ctx.restore();
+
+            // Задняя правая нога
+            ctx.save();
+            ctx.translate(capybara.x + 15, baseY);
+            ctx.rotate(-legOffset.back * Math.PI / 180);
+            ctx.fillStyle = '#5B3F17';
+            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
+            ctx.fillStyle = '#4A3228';
+            ctx.fillRect(-legWidth / 2 - 1, legHeight - 4, legWidth + 2, 4);
+            ctx.restore();
+
+            // Хвостик
+            ctx.fillStyle = '#7B5F37';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 5, capybara.y + 28, 6, 4, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Улыбка
+            ctx.strokeStyle = '#5C4033';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(capybara.x + 82, capybara.y + 30, 6, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            // Щёчки
+            ctx.fillStyle = 'rgba(255, 150, 150, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(capybara.x + 72, capybara.y + 30, 6, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Рисование арбуза
+        function drawWatermelon(x, y, size) {
+            ctx.save();
+            
+            // Основная форма
+            ctx.fillStyle = '#2D5A27';
+            ctx.beginPath();
+            ctx.ellipse(x, y, size, size * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Полоски
+            ctx.strokeStyle = '#1B3A18';
+            ctx.lineWidth = 3;
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + i * 8, y - size * 0.7);
+                ctx.quadraticCurveTo(x + i * 12, y, x + i * 8, y + size * 0.7);
+                ctx.stroke();
+            }
+
+            // Блик
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x - 5, y - 8, size * 0.3, size * 0.2, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Рисование препятствия (кактус)
+        function drawObstacle(x, y, width, height) {
+            ctx.save();
+            
+            // Основной ствол
+            ctx.fillStyle = '#4A7C59';
+            ctx.fillRect(x + width / 2 - 10, y, 20, height);
+
+            // Ветки
+            ctx.fillRect(x, y + height * 0.3, width / 2 - 10, 15);
+            ctx.fillRect(x + width / 2 + 10, y + height * 0.5, width / 2 - 10, 15);
+
+            // Шипы
+            ctx.fillStyle = '#2D5A3C';
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + width / 2 - 10, y + i * (height / 5));
+                ctx.lineTo(x + width / 2 - 15, y + i * (height / 5) - 5);
+                ctx.lineTo(x + width / 2 - 5, y + i * (height / 5));
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Частицы при сборе арбуза
+        function createParticles(x, y) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 30,
+                    color: `hsl(${Math.random() * 60 + 90}, 70%, 50%)`
+                });
+            }
+        }
+
+        function updateParticles() {
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3;
+                p.life--;
+            });
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 30;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        // Проверка столкновений
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        // Обновление игры
+        function update() {
+            // Coyote timer — уменьшается каждый кадр
+            if (capybara.y >= capybara.groundY) {
+                capybara.coyoteTimer = capybara.coyoteTime;
+            } else {
+                capybara.coyoteTimer--;
+            }
+
+            // Jump buffer timer — уменьшается каждый кадр
+            capybara.jumpBufferTimer--;
+
+            // Попытка прыжка (если есть coyote time или jump buffer)
+            if (capybara.jumpBufferTimer > 0 && capybara.coyoteTimer > 0) {
+                capybara.velocityY = capybara.jumpPower;
+                capybara.isJumping = true;
+                capybara.jumpBufferTimer = 0;
+                capybara.coyoteTimer = 0;
+                // Squash & stretch при прыжке
+                capybara.squash = 0.7;
+                capybara.stretch = 1.3;
+            }
+
+            // Физика: разная гравитация при подъёме и падении
+            if (capybara.velocityY < 0) {
+                // Подъём — лёгкая гравитация
+                capybara.velocityY += capybara.gravityRise;
+            } else {
+                // Падение — мягкая гравитация
+                capybara.velocityY += capybara.gravityFall;
+            }
+
+            // Ограничение скорости падения
+            if (capybara.velocityY > capybara.maxFallSpeed) {
+                capybara.velocityY = capybara.maxFallSpeed;
+            }
+
+            capybara.y += capybara.velocityY;
+
+            // Приземление
+            if (capybara.y >= capybara.groundY) {
+                capybara.y = capybara.groundY;
+                // Squash при приземлении
+                if (capybara.isJumping) {
+                    capybara.squash = 1.2;
+                    capybara.stretch = 0.8;
+                }
+                capybara.velocityY = 0;
+                capybara.isJumping = false;
+            }
+
+            // Плавное восстановление squash & stretch
+            capybara.squash += (1 - capybara.squash) * 0.15;
+            capybara.stretch += (1 - capybara.stretch) * 0.15;
+
+            // Спавн препятствий
+            obstacleTimer++;
+            if (obstacleTimer >= obstacleInterval) {
+                obstacleTimer = 0;
+                const height = Math.random() * 20 + 40;
+                obstacles.push({
+                    x: canvas.width,
+                    y: capybara.groundY + capybara.height - height,
+                    width: 40,
+                    height: height
+                });
+                obstacleInterval = Math.max(100, 180 - score / 15);
+            }
+
+            // Спавн арбузов
+            watermelonTimer++;
+            if (watermelonTimer >= watermelonInterval) {
+                watermelonTimer = 0;
+                const y = Math.random() > 0.5 ? capybara.groundY - 50 : capybara.groundY - 120;
+                watermelons.push({
+                    x: canvas.width,
+                    y: y,
+                    width: 40,
+                    height: 32,
+                    size: 20
+                });
+                watermelonInterval = Math.max(90, 150 - score / 20);
+            }
+
+            // Обновление препятствий
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+            obstacles.forEach(obs => {
+                obs.x -= gameSpeed;
+            });
+
+            // Обновление арбузов
+            watermelons = watermelons.filter(wm => wm.x + wm.width > 0);
+            watermelons.forEach(wm => {
+                wm.x -= gameSpeed;
+            });
+
+            // Проверка столкновений с препятствиями (с запасом)
+            const capyBox = {
+                x: capybara.x + 15,
+                y: capybara.y + 10,
+                width: capybara.width - 25,
+                height: capybara.height - 15
+            };
+
+            for (let obs of obstacles) {
+                if (checkCollision(capyBox, obs)) {
+                    gameOver = true;
+                    if (score > highscore) {
+                        highscore = score;
+                        localStorage.setItem('capybaraHighscore', highscore);
+                        highscoreElement.textContent = highscore;
+                    }
+                    return;
+                }
+            }
+
+            // Проверка сбора арбузов (с чуть увеличенным хитбоксом)
+            watermelons = watermelons.filter(wm => {
+                const watermelonBox = {
+                    x: wm.x + 5,
+                    y: wm.y + 5,
+                    width: wm.width - 10,
+                    height: wm.height - 10
+                };
+                if (checkCollision(capyBox, watermelonBox)) {
+                    score += 10;
+                    scoreElement.textContent = score;
+                    createParticles(wm.x + wm.width / 2, wm.y + wm.height / 2);
+                    gameSpeed += 0.05;
+                    return false;
+                }
+                return true;
+            });
+
+            updateParticles();
+        }
+
+        // Рисование
+        function draw() {
+            // Очистка
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Фон - градиент неба
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#98D8C8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Облака
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            const cloudOffset = (Date.now() / 50) % canvas.width;
+            for (let i = 0; i < 3; i++) {
+                const x = (i * 300 - cloudOffset + canvas.width) % (canvas.width + 200) - 100;
+                const y = 50 + i * 30;
+                ctx.beginPath();
+                ctx.ellipse(x, y, 60, 30, 0, 0, Math.PI * 2);
+                ctx.ellipse(x + 40, y - 10, 50, 25, 0, 0, Math.PI * 2);
+                ctx.ellipse(x + 80, y, 60, 30, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Земля
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, capybara.groundY + capybara.height, canvas.width, canvas.height - capybara.groundY - capybara.height);
+
+            // Трава
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, capybara.groundY + capybara.height - 10, canvas.width, 10);
+
+            // Объекты
+            obstacles.forEach(obs => drawObstacle(obs.x, obs.y, obs.width, obs.height));
+            watermelons.forEach(wm => drawWatermelon(wm.x + wm.width / 2, wm.y + wm.height / 2, wm.size));
+            drawParticles();
+            drawCapybara();
+        }
+
+        // Экран старта
+        function drawStartScreen() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#98D8C8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, capybara.groundY + capybara.height, canvas.width, canvas.height - capybara.groundY - capybara.height);
+
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, capybara.groundY + capybara.height - 10, canvas.width, 10);
+
+            drawCapybara();
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('🍉 Капибара: Охота за арбузами 🍉', canvas.width / 2, canvas.height / 2 - 50);
+
+            ctx.font = '24px Arial';
+            ctx.fillText('Нажмите ПРОБЕЛ или кликните мышкой', canvas.width / 2, canvas.height / 2 + 20);
+            ctx.fillText('чтобы начать игру!', canvas.width / 2, canvas.height / 2 + 60);
+
+            ctx.font = '20px Arial';
+            ctx.fillText('Собирай арбузы 🍉 и перепрыгивай препятствия 🌵', canvas.width / 2, canvas.height / 2 + 110);
+        }
+
+        // Экран Game Over
+        function drawGameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#ff6b6b';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Игра окончена!', canvas.width / 2, canvas.height / 2 - 50);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '32px Arial';
+            ctx.fillText(`Очки: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
+
+            if (score >= highscore && score > 0) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = '24px Arial';
+                ctx.fillText('🎉 Новый рекорд! 🎉', canvas.width / 2, canvas.height / 2 + 50);
+            }
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.fillText('Нажмите ПРОБЕЛ или кликните для перезапуска', canvas.width / 2, canvas.height / 2 + 100);
+        }
+
+        // Игровой цикл
+        function gameLoop() {
+            if (!gameStarted) return;
+            
+            if (!gameOver) {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            } else {
+                draw();
+                drawGameOver();
+            }
+        }
+
+        // Начальный экран
+        drawStartScreen();
+    </script>
+</body>
+</html>

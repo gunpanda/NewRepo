@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Лунная Лапша | Китайская лапшичная с доставкой</title>
+    <meta name="description" content="Лендинг китайской лапшичной: лапша, супы, вок и быстрый заказ онлайн." />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #19120f;
+        --ink-soft: #4d4038;
+        --paper: #fff7e8;
+        --rice: #fffdf5;
+        --cinnabar: #c9271f;
+        --cinnabar-deep: #8f1613;
+        --jade: #0b7c64;
+        --jade-soft: #dcefe6;
+        --gold: #d99a2b;
+        --plum: #4a1836;
+        --line: rgba(61, 32, 20, 0.16);
+        --shadow: 0 26px 80px rgba(43, 16, 10, 0.18);
+        --radius: 8px;
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 10% 2%, rgba(217, 154, 43, 0.24), transparent 28rem),
+          linear-gradient(115deg, #fff8eb 0%, #fffdf6 42%, #f4ead9 100%);
+        color: var(--ink);
+        font: 16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.28;
+        background-image:
+          linear-gradient(rgba(124, 66, 28, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 66, 28, 0.08) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: linear-gradient(to bottom, #000, transparent 82%);
+      }
+
+      a { color: inherit; text-decoration: none; }
+
+      button, input, select { font: inherit; }
+
+      button { cursor: pointer; }
+
+      .shell { min-height: 100vh; overflow: hidden; }
+
+      .wrap {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: fixed;
+        z-index: 20;
+        top: 14px;
+        left: 0;
+        right: 0;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 64px;
+        border: 1px solid rgba(255, 253, 245, 0.36);
+        border-radius: 999px;
+        padding: 8px 10px 8px 18px;
+        background: rgba(30, 14, 10, 0.58);
+        color: #fffaf0;
+        backdrop-filter: blur(22px) saturate(1.25);
+        box-shadow: 0 16px 48px rgba(25, 18, 15, 0.22);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: max-content;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .seal {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--cinnabar);
+        color: #fff6df;
+        border: 1px solid rgba(255, 230, 184, 0.72);
+        font-family: Georgia, serif;
+        font-size: 20px;
+      }
+
+      .links {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: rgba(255, 250, 240, 0.82);
+      }
+
+      .links a {
+        padding: 9px 12px;
+        border-radius: 999px;
+      }
+
+      .links a:hover { background: rgba(255, 255, 255, 0.12); }
+
+      .nav-cta,
+      .primary,
+      .secondary,
+      .dish button,
+      .cart button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 999px;
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+
+      .nav-cta, .primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        padding: 12px 17px;
+        background: var(--gold);
+        color: #2f130b;
+        box-shadow: 0 12px 34px rgba(217, 154, 43, 0.35);
+      }
+
+      .primary::before { content: "+"; font-size: 20px; line-height: 1; }
+
+      .secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: rgba(255, 253, 245, 0.12);
+        color: #fff8e8;
+        border: 1px solid rgba(255, 248, 232, 0.24);
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        align-items: end;
+        min-height: 94svh;
+        padding: 112px 0 42px;
+        isolation: isolate;
+        background: #1d0f0b;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -3;
+        background: url("assets/noodle-hero.png") center / cover no-repeat;
+        transform: scale(1.01);
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        background:
+          linear-gradient(90deg, rgba(17, 8, 6, 0.94) 0%, rgba(17, 8, 6, 0.79) 36%, rgba(17, 8, 6, 0.22) 70%, rgba(17, 8, 6, 0.34) 100%),
+          linear-gradient(0deg, rgba(25, 18, 15, 0.74) 0%, transparent 40%, rgba(25, 18, 15, 0.42) 100%);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(340px, 0.55fr);
+        gap: 28px;
+        align-items: end;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 18px;
+        color: #ffe3a6;
+        font-weight: 800;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 40px;
+        height: 1px;
+        background: currentColor;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        color: #fff8e8;
+        font-size: clamp(48px, 6.6vw, 86px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .hero-copy {
+        max-width: 580px;
+        margin: 24px 0 0;
+        color: rgba(255, 248, 232, 0.82);
+        font-size: clamp(18px, 2vw, 22px);
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .ticker {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 248, 232, 0.2);
+        border-radius: var(--radius);
+        background: rgba(255, 248, 232, 0.18);
+        backdrop-filter: blur(18px);
+      }
+
+      .ticker div {
+        min-height: 118px;
+        padding: 17px;
+        background: rgba(28, 12, 8, 0.56);
+        color: #fff8e8;
+      }
+
+      .ticker strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .ticker span {
+        display: block;
+        margin-top: 8px;
+        color: rgba(255, 248, 232, 0.68);
+        font-size: 13px;
+      }
+
+      .section {
+        padding: 86px 0;
+      }
+
+      .section.alt {
+        background: rgba(255, 253, 245, 0.62);
+        border-block: 1px solid var(--line);
+      }
+
+      .head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(34px, 5vw, 64px);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 490px;
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 18px;
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 22px;
+      }
+
+      .chip {
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 9px 14px;
+        background: rgba(255, 253, 245, 0.72);
+        color: var(--ink-soft);
+        font-weight: 760;
+      }
+
+      .chip.active {
+        background: var(--ink);
+        color: #fff8e8;
+        border-color: var(--ink);
+      }
+
+      .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .dish {
+        display: grid;
+        gap: 12px;
+        min-height: 320px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 253, 245, 0.78);
+        box-shadow: 0 16px 48px rgba(72, 36, 16, 0.08);
+      }
+
+      .dish-photo {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        min-height: 152px;
+        border-radius: 7px;
+        overflow: hidden;
+        background: #2a1710;
+      }
+
+      .dish-photo img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.45s ease;
+      }
+
+      .dish:hover .dish-photo img { transform: scale(1.045); }
+      .dish-art::before,
+      .dish-art::after {
+        content: "";
+        position: absolute;
+        border-radius: 999px;
+      }
+
+      .dish-art::before {
+        width: 112px;
+        height: 16px;
+        top: 31px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-10deg);
+        background: repeating-linear-gradient(90deg, #fff4cf 0 11px, #f3c466 11px 16px);
+        box-shadow: 0 24px 0 rgba(255, 244, 207, 0.82), 0 46px 0 rgba(255, 244, 207, 0.64);
+      }
+
+      .dish-art::after {
+        width: 38px;
+        height: 38px;
+        right: 20px;
+        bottom: 17px;
+        background: var(--jade);
+        box-shadow: -58px -6px 0 #f5f0dc, -28px 12px 0 var(--gold);
+      }
+
+      .dish[data-kind="veg"] .dish-art { background: radial-gradient(circle at 50% 56%, #f6d98a 0 24%, transparent 25%), radial-gradient(circle at 50% 56%, #0b7c64 0 36%, transparent 37%), radial-gradient(circle at 50% 59%, #25130e 0 50%, transparent 51%), linear-gradient(135deg, #eef6d9, #a7c957); }
+      .dish[data-kind="hot"] .dish-art { background: radial-gradient(circle at 50% 56%, #f7c65d 0 24%, transparent 25%), radial-gradient(circle at 50% 56%, #c9271f 0 37%, transparent 38%), radial-gradient(circle at 50% 59%, #25130e 0 50%, transparent 51%), linear-gradient(135deg, #4a1836, #d99a2b); }
+      .dish[data-kind="soup"] .dish-art { background: radial-gradient(circle at 50% 56%, #f8df9a 0 24%, transparent 25%), radial-gradient(circle at 50% 56%, #a45b2d 0 37%, transparent 38%), radial-gradient(circle at 50% 59%, #25130e 0 50%, transparent 51%), linear-gradient(135deg, #dcefe6, #7db7a6); }
+
+      .dish h3 {
+        margin: 0;
+        font-size: 21px;
+        line-height: 1.08;
+      }
+
+      .dish p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 14px;
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: auto;
+        color: var(--ink-soft);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .price {
+        font-size: 22px;
+        font-weight: 920;
+        color: var(--cinnabar-deep);
+      }
+
+      .dish button {
+        width: 100%;
+        background: var(--ink);
+        color: #fff8e8;
+      }
+
+      .story-grid {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 253, 245, 0.72);
+        padding: 24px;
+      }
+
+      .panel.dark {
+        display: grid;
+        align-content: end;
+        min-height: 420px;
+        background:
+          linear-gradient(160deg, rgba(25, 18, 15, 0.82), rgba(74, 24, 54, 0.72)),
+          url("assets/noodle-hero.png") center / cover;
+        color: #fff8e8;
+        box-shadow: var(--shadow);
+      }
+
+      .panel.dark h2 { color: #fff8e8; }
+
+      .steps {
+        display: grid;
+        gap: 12px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 14px;
+        align-items: start;
+        padding: 15px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 253, 245, 0.62);
+      }
+
+      .step b {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: var(--cinnabar);
+        color: #fff8e8;
+      }
+
+      .step h3 { margin: 0 0 4px; font-size: 18px; }
+      .step p { margin: 0; color: var(--ink-soft); }
+
+      .order {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .builder {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .option {
+        position: relative;
+        display: grid;
+        gap: 8px;
+        min-height: 118px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 253, 245, 0.72);
+      }
+
+      .option input {
+        position: absolute;
+        inset: 14px 14px auto auto;
+        accent-color: var(--cinnabar);
+      }
+
+      .option span { color: var(--ink-soft); font-size: 14px; }
+
+      .cart {
+        position: sticky;
+        top: 98px;
+        border-radius: var(--radius);
+        padding: 18px;
+        background: #1f120e;
+        color: #fff8e8;
+        box-shadow: var(--shadow);
+      }
+
+      .cart h3 { margin: 0 0 12px; font-size: 24px; }
+
+      .cart-list {
+        display: grid;
+        gap: 10px;
+        min-height: 82px;
+        margin: 0 0 14px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .cart-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 248, 232, 0.14);
+        color: rgba(255, 248, 232, 0.86);
+      }
+
+      .cart-item small { display: block; color: rgba(255, 248, 232, 0.56); }
+
+      .cart-item button {
+        width: 32px;
+        min-height: 32px;
+        background: rgba(255, 248, 232, 0.12);
+        color: #fff8e8;
+      }
+
+      .total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-top: 1px solid rgba(255, 248, 232, 0.14);
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .cart .checkout {
+        width: 100%;
+        background: var(--gold);
+        color: #2f130b;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .field input, .field select {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid rgba(255, 248, 232, 0.18);
+        border-radius: 7px;
+        padding: 10px 12px;
+        background: rgba(255, 248, 232, 0.08);
+        color: #fff8e8;
+      }
+
+      .field select option { color: var(--ink); }
+
+      .toast {
+        position: fixed;
+        z-index: 30;
+        right: 18px;
+        bottom: 18px;
+        max-width: 340px;
+        transform: translateY(130%);
+        transition: transform 0.28s ease;
+        border: 1px solid rgba(255, 248, 232, 0.24);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        background: rgba(25, 18, 15, 0.92);
+        color: #fff8e8;
+        box-shadow: var(--shadow);
+      }
+
+      .toast.show { transform: translateY(0); }
+
+      footer {
+        padding: 34px 0;
+        background: #1f120e;
+        color: rgba(255, 248, 232, 0.78);
+      }
+
+      footer .wrap {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 980px) {
+        .links { display: none; }
+        .hero-grid, .story-grid, .order { grid-template-columns: 1fr; }
+        .ticker, .builder { grid-template-columns: repeat(3, 1fr); }
+        .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .cart { position: static; }
+      }
+
+      @media (max-width: 640px) {
+        .wrap { width: min(100% - 22px, 1180px); }
+        .topbar { top: 8px; }
+        .nav { min-height: 58px; padding-left: 12px; }
+        .brand span:last-child { display: none; }
+        .nav-cta { padding: 10px 12px; }
+        .hero { min-height: 92svh; padding-top: 92px; }
+        .hero::before { background-position: 58% center; }
+        .hero::after { background: linear-gradient(90deg, rgba(17, 8, 6, 0.95), rgba(17, 8, 6, 0.58)), linear-gradient(0deg, rgba(17, 8, 6, 0.8), transparent 52%); }
+        h1 { font-size: clamp(44px, 17vw, 72px); }
+        .hero-copy { font-size: 17px; }
+        .ticker, .menu-grid, .builder { grid-template-columns: 1fr; }
+        .ticker div { min-height: 92px; }
+        .section { padding: 58px 0; }
+        .head { display: grid; }
+        .panel { padding: 18px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <nav class="wrap nav" aria-label="Главная навигация">
+          <a class="brand" href="#top" aria-label="Лунная Лапша">
+            <span class="seal">面</span>
+            <span>Лунная Лапша</span>
+          </a>
+          <div class="links">
+            <a href="#menu">Меню</a>
+            <a href="#ritual">Кухня</a>
+            <a href="#order">Заказ</a>
+          </div>
+          <a class="nav-cta" href="#order">Собрать заказ</a>
+        </nav>
+      </header>
+
+      <main id="top">
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="wrap hero-grid">
+            <div>
+              <p class="eyebrow">Китайская лапшичная с доставкой за 35 минут</p>
+              <h1 id="hero-title">Лапша, которая держит огонь.</h1>
+              <p class="hero-copy">Ручная вытяжка теста, глубокие бульоны, вок на сильном пламени и соусы, которые собирают вкус в одну точную чашу.</p>
+              <div class="hero-actions">
+                <a class="primary" href="#menu">Выбрать лапшу</a>
+                <a class="secondary" href="#ritual">Как готовим</a>
+              </div>
+            </div>
+            <div class="ticker" aria-label="Преимущества">
+              <div><strong>12</strong><span>видов лапши каждый день</span></div>
+              <div><strong>35</strong><span>минут средняя доставка</span></div>
+              <div><strong>4.9</strong><span>оценка гостей за бульон</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="menu" aria-labelledby="menu-title">
+          <div class="wrap">
+            <div class="head">
+              <h2 id="menu-title">Меню лапши</h2>
+              <p class="lead">Плотные порции, честная острота и разные основы: супы, вок, вегетарианские чаши и огненные позиции.</p>
+            </div>
+            <div class="filters" aria-label="Фильтр меню">
+              <button class="chip active" data-filter="all">Все</button>
+              <button class="chip" data-filter="soup">Бульон</button>
+              <button class="chip" data-filter="hot">Острое</button>
+              <button class="chip" data-filter="veg">Вегетарианское</button>
+            </div>
+            <div class="menu-grid" id="dishGrid"></div>
+          </div>
+        </section>
+
+        <section class="section alt" id="ritual" aria-labelledby="ritual-title">
+          <div class="wrap story-grid">
+            <div class="panel dark">
+              <p class="eyebrow">Вок, пар, красная печать</p>
+              <h2 id="ritual-title">Китайская классика в современной подаче</h2>
+            </div>
+            <div class="panel steps">
+              <article class="step">
+                <b>1</b>
+                <div><h3>Тесто тянем утром</h3><p>Лапша держит упругость в бульоне и не теряет текстуру в доставке.</p></div>
+              </article>
+              <article class="step">
+                <b>2</b>
+                <div><h3>Бульон варим долго</h3><p>Говяжий, куриный и грибной основы раскрываются без лишней тяжести.</p></div>
+              </article>
+              <article class="step">
+                <b>3</b>
+                <div><h3>Остроту собираем по слоям</h3><p>Чили-масло, сычуаньский перец, имбирь и ферментированные бобы добавляются под блюдо.</p></div>
+              </article>
+              <article class="step">
+                <b>4</b>
+                <div><h3>Упаковываем раздельно</h3><p>Лапша, бульон и зелень доезжают отдельно, чтобы дома чаша была как с кухни.</p></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="order" aria-labelledby="order-title">
+          <div class="wrap">
+            <div class="head">
+              <h2 id="order-title">Соберите заказ</h2>
+              <p class="lead">Добавьте блюда из меню или соберите базовую чашу: лапша, белок и уровень огня.</p>
+            </div>
+            <div class="order">
+              <div class="builder" aria-label="Конструктор лапши">
+                <label class="option"><input type="radio" name="base" value="Пшеничная лапша" checked /><strong>Пшеничная</strong><span>упругая классика для вок и супа</span></label>
+                <label class="option"><input type="radio" name="base" value="Рисовая лапша" /><strong>Рисовая</strong><span>мягкая, легкая, без глютена</span></label>
+                <label class="option"><input type="radio" name="base" value="Толстая лапша biang" /><strong>Biang</strong><span>широкие ленты для густых соусов</span></label>
+                <label class="option"><input type="radio" name="protein" value="говядина" checked /><strong>Говядина</strong><span>томленая грудинка и зеленый лук</span></label>
+                <label class="option"><input type="radio" name="protein" value="тофу" /><strong>Тофу</strong><span>обжаренный тофу, грибы, кунжут</span></label>
+                <label class="option"><input type="radio" name="protein" value="утка" /><strong>Утка</strong><span>хрустящая кожа и сливовый соус</span></label>
+                <label class="option"><input type="radio" name="heat" value="мягкий огонь" checked /><strong>Мягко</strong><span>теплый имбирь и чеснок</span></label>
+                <label class="option"><input type="radio" name="heat" value="средний огонь" /><strong>Средне</strong><span>чили-масло и перец хуацзяо</span></label>
+                <label class="option"><input type="radio" name="heat" value="драконий огонь" /><strong>Остро</strong><span>плотный сычуаньский жар</span></label>
+              </div>
+
+              <aside class="cart" aria-label="Корзина">
+                <h3>Ваш заказ</h3>
+                <ul class="cart-list" id="cartList"></ul>
+                <button class="checkout" id="customBtn">+ Добавить чашу</button>
+                <div class="field">
+                  <label for="address">Адрес доставки</label>
+                  <input id="address" placeholder="Улица, дом, подъезд" />
+                </div>
+                <div class="field">
+                  <label for="time">Время</label>
+                  <select id="time"><option>Как можно скорее</option><option>Через 60 минут</option><option>Сегодня вечером</option></select>
+                </div>
+                <div class="total"><span>Итого</span><span id="total">0 ₽</span></div>
+                <button class="checkout" id="checkoutBtn">Оформить</button>
+              </aside>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <div class="wrap">
+          <strong>Лунная Лапша · 面馆</strong>
+          <span>Москва · ежедневно 11:00-23:00 · +7 900 000-00-00</span>
+        </div>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const dishes = [
+        { name: "Ланьчжоу с говядиной", kind: "soup", price: 590, tag: "бульон 12 часов", image: "assets/dishes/lanzhou-beef.jpg?v=2", text: "Пшеничная лапша, прозрачный говяжий бульон, редька, кинза и чили-масло." },
+        { name: "Даньдань с арахисом", kind: "hot", price: 540, tag: "сычуаньский перец", image: "assets/dishes/dan-dan.jpg?v=2", text: "Острый соус, фарш, арахис, кунжутная паста и пружинная лапша." },
+        { name: "Biang с томленой уткой", kind: "hot", price: 690, tag: "широкая лапша", image: "assets/dishes/biang-duck.jpg?v=2", text: "Ленты biang, утка, сливовый соус, огурец, зеленый лук и жареный чеснок." },
+        { name: "Грибной танмян", kind: "veg soup", price: 520, tag: "веганский бульон", image: "assets/dishes/mushroom-tangmian.jpg?v=2", text: "Шиитаке, древесные грибы, бок-чой, рисовая лапша и имбирное масло." },
+        { name: "Вок с курицей гунбао", kind: "hot", price: 560, tag: "огонь вок", image: "assets/dishes/gongbao-chicken.jpg?v=2", text: "Лапша, курица, арахис, сладкий перец, чили и темный соевый соус." },
+        { name: "Ма по тофу лапша", kind: "veg hot", price: 510, tag: "тофу и хуацзяо", image: "assets/dishes/mapo-tofu.jpg?v=2", text: "Мягкий тофу, ферментированные бобы, чили, зеленый лук и лапша." },
+        { name: "Кунжутная холодная", kind: "veg", price: 470, tag: "легкая чаша", image: "assets/dishes/cold-sesame.jpg?v=2", text: "Рисовая лапша, огурец, морковь, кунжутный соус и хрустящий лук." },
+        { name: "Суп с вонтонами", kind: "soup", price: 610, tag: "домашние вонтоны", image: "assets/dishes/wonton-soup.jpg?v=2", text: "Куриный бульон, тонкая лапша, вонтоны со свининой, зелень и белый перец." }
+      ];
+      const cart = [];
+      const dishGrid = document.querySelector("#dishGrid");
+      const cartList = document.querySelector("#cartList");
+      const total = document.querySelector("#total");
+      const toast = document.querySelector("#toast");
+
+      function money(value) { return `${value.toLocaleString("ru-RU")} ₽`; }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2400);
+      }
+
+      function renderMenu(filter = "all") {
+        dishGrid.innerHTML = "";
+        dishes
+          .filter((dish) => filter === "all" || dish.kind.includes(filter))
+          .forEach((dish) => {
+            const article = document.createElement("article");
+            article.className = "dish";
+            article.dataset.kind = dish.kind.includes("hot") ? "hot" : dish.kind.includes("veg") ? "veg" : "soup";
+            article.innerHTML = `
+              <div class="dish-photo"><img src="${dish.image}" alt="${dish.name}" loading="eager" decoding="async" /></div>
+              <div class="meta"><span>${dish.tag}</span><span>${dish.kind.includes("hot") ? "остро" : ""}</span></div>
+              <h3>${dish.name}</h3>
+              <p>${dish.text}</p>
+              <div class="meta"><span class="price">${money(dish.price)}</span><span>420-520 г</span></div>
+              <button type="button">+ В корзину</button>
+            `;
+            article.querySelector("button").addEventListener("click", () => addToCart(dish.name, dish.price, dish.tag));
+            dishGrid.appendChild(article);
+          });
+      }
+
+      function addToCart(name, price, detail) {
+        cart.push({ name, price, detail });
+        renderCart();
+        showToast(`${name} добавлено`);
+      }
+
+      function renderCart() {
+        cartList.innerHTML = "";
+        if (!cart.length) {
+          cartList.innerHTML = "<li>Корзина пока пустая</li>";
+        }
+        cart.forEach((item, index) => {
+          const li = document.createElement("li");
+          li.className = "cart-item";
+          li.innerHTML = `<span>${item.name}<small>${item.detail}</small></span><button type="button" aria-label="Убрать ${item.name}">−</button>`;
+          li.querySelector("button").addEventListener("click", () => {
+            cart.splice(index, 1);
+            renderCart();
+          });
+          cartList.appendChild(li);
+        });
+        total.textContent = money(cart.reduce((sum, item) => sum + item.price, 0));
+      }
+
+      document.querySelectorAll(".chip").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".chip").forEach((chip) => chip.classList.remove("active"));
+          button.classList.add("active");
+          renderMenu(button.dataset.filter);
+        });
+      });
+
+      document.querySelector("#customBtn").addEventListener("click", () => {
+        const base = document.querySelector('input[name="base"]:checked').value;
+        const protein = document.querySelector('input[name="protein"]:checked').value;
+        const heat = document.querySelector('input[name="heat"]:checked').value;
+        addToCart(`Своя чаша: ${base}`, 620, `${protein}, ${heat}`);
+      });
+
+      document.querySelector("#checkoutBtn").addEventListener("click", () => {
+        if (!cart.length) return showToast("Добавьте хотя бы одно блюдо");
+        const address = document.querySelector("#address").value.trim();
+        if (!address) return showToast("Укажите адрес доставки");
+        showToast("Заказ принят. Мы уже ставим вок на огонь");
+      });
+
+      renderMenu();
+      renderCart();
+    </script>
+  </body>
+</html>
+
+
+
+
+
+
